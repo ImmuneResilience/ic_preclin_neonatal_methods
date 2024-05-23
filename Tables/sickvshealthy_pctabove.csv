@@ -1,0 +1,7 @@
+"variable","group.p","n","n_above","above.blank","below.blank"
+"vo2","empty",27,0,0,100
+"vo2","healthy",14,14,100,0
+"vo2","sepsis",27,26,96.2962962962963,3.70370370370371
+"vco2","empty",27,0,0,100
+"vco2","healthy",14,14,100,0
+"vco2","sepsis",27,26,96.2962962962963,3.70370370370371
