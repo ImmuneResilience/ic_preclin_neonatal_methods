@@ -16,6 +16,10 @@ library(ggpubr)
 library(survival)
 library(survminer)
 
+# set working directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd("../")
+
 # load data
 met <- read.csv("Rdata/metab_collapsed_for_analysis_pub.csv")
 surv.data <- read.csv("Rdata/promethion_survival.csv")

@@ -13,6 +13,10 @@ library(plyr)
 library(tidyverse)
 library(lubridate)
 
+# set working directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd("../")
+
 # load data
 dat.pub <- read.csv("Rdata/metab_replicates_for_analysis.csv")
 
