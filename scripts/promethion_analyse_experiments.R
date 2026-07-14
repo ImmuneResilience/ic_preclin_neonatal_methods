@@ -26,8 +26,7 @@ surv.data <- read.csv("Rdata/promethion_survival.csv")
 
 
 # Pre-process data --------------------------------------------------------
-# create unique pup ID
-met$unique_pup_ID <- paste(met$cage, met$pup_ID, met$expDate, sep = "_")
+
 
 # Eliminate values with a CV > 50
 met <- filter(met, cv.o2 < 50, cv.co2 < 50)
