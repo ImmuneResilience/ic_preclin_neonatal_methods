@@ -21,11 +21,13 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd("../")
 
 # load data
-met <- read.csv("Rdata/metab_collapsed_for_analysis_pub.csv")
+met <- read.csv("Rdata/metab_collapsed_for_analysis.csv")
 surv.data <- read.csv("Rdata/promethion_survival.csv")
 
 
 # Pre-process data --------------------------------------------------------
+
+
 # Eliminate values with a CV > 50
 met <- filter(met, cv.o2 < 50, cv.co2 < 50)
 
@@ -85,7 +87,7 @@ temp$visit.name <- factor(temp$visit.name, levels = c("baseline", "2HPC", "8HPC"
 
 # Temp differences ####
 temp.p <- temp %>%
-  select(temp, temp2, temp.diff, pup_ID, cage, group, hours_post_challenge, challenge_stat, visit.name, unique_pup_ID) %>%
+  select(temp, temp2, temp.diff, pup_ID, cage, group, hours_post_challenge, challenge_stat, visit.name, metab_identifier, unique_pup_ID) %>%
   unique() %>%
   filter(temp.diff < 9) # There are two instances in these data where the temperature that was recorded was unusually low (20C and 30C for one pup, and 28C and 40C for another pup). These are being removed due to biological implausibility, especially since these pups did not display such different temperatures at later time points.
 
@@ -129,7 +131,7 @@ dat.p <- filter(dat.p, temperature < 38, visit.name %in% c("baseline","8HPC"))
 ggplot(dat.p[dat.p$visit.name == "8HPC",], aes(x = temp.timepoint, y = temperature, fill = temp.timepoint)) +
   geom_boxplot(outlier.color = NA) +
   geom_point(shape = 21, size = 2) +
-  geom_line(aes(group = unique_pup_ID)) +
+  geom_line(aes(group = metab_identifier)) +
   facet_grid(group ~ challenge_stat) +
   theme_bw() +
   theme(axis.text = element_text(size = 12),
@@ -194,15 +196,22 @@ ggplot(temp[temp$variable %in% c("vo2", "vco2"),], aes(x = visit.cat, y = value,
 # Investigate replicate values
 # For the older mice, are the wider range of Vo2 values reflected by a larger drop from the first to the 2nd measurement?  We can use the raw, unaveraged data to find out.
 
-dat.reps <- read.csv("Rdata/metab_replicates_fot_analysis.csv")
+dat.reps <- read.csv("Rdata/metab_replicates_for_analysis.csv")
 dat.reps$cv.o2.abs <- abs(dat.reps$cv.o2)
 dat.reps$cv.co2.abs <- abs(dat.reps$cv.co2)
 dat.reps <- filter(dat.reps, cv.co2.abs < 50, cv.o2.abs < 50)
 
-unique(dat.reps$expName)
 
-rep.temp <- filter(dat.reps, expName == "Promethion warming 30C vs RT")
+rep.temp <- filter(dat.reps, metab_identifier %in% temp$metab_identifier)
+
+# append the reading data to temperature metadata
+temp.meta <- temp %>%
+  select(metab_identifier, visit.name, group, challenge_stat)
+
+rep.temp <- join(rep.temp, temp.meta, by = "metab_identifier")
+
 # set aesthetics
+
 rep.temp$visit.cat <- rep.temp$visit.name
 rep.temp$visit.cat <- gsub("HPC", "", rep.temp$visit.cat)
 rep.temp$visit.cat <- factor(rep.temp$visit.cat, levels = c("baseline", "2", "8", "24", "36", "48", "56", "72"))
@@ -223,10 +232,10 @@ rep.temp$vco2.change <- ifelse(rep.temp$vco2.diff >= 0, "decrease", "increase")
 
 # plot increase or decrease
 # VO2
-ggplot(rep.temp[rep.temp$challenge_stat == "No",], aes(x = as.factor(reading), y = vo2, group = metab_identifier, color = vo2.change)) +
+ggplot(rep.temp[rep.temp$challenge_stat == "Unchallenged",], aes(x = as.factor(reading), y = vo2, group = metab_identifier, color = vo2.change)) +
   geom_point() +
   geom_line() +
-  facet_grid(group~visit.cat) +
+  facet_grid(tube_temp~visit.cat) +
   theme_bw() + 
   theme(legend.position = "bottom",
         axis.text = element_text(size = 12),
@@ -238,10 +247,10 @@ ggplot(rep.temp[rep.temp$challenge_stat == "No",], aes(x = as.factor(reading), y
 ggsave("Figures/temp/reading1vs2_changetype.png", device = "png", dpi = 300, width = 6, height = 4)
 
 # VCO2
-ggplot(rep.temp[rep.temp$challenge_stat == "No",], aes(x = as.factor(reading), y = vco2, group = metab_identifier, color = vco2.change)) +
+ggplot(rep.temp[rep.temp$challenge_stat == "Unchallenged",], aes(x = as.factor(reading), y = vco2, group = metab_identifier, color = vco2.change)) +
   geom_point() +
   geom_line() +
-  facet_grid(group~visit.cat) +
+  facet_grid(tube_temp~visit.cat) +
   theme_bw() + 
   theme(legend.position = "bottom",
         axis.text = element_text(size = 12),
@@ -255,22 +264,22 @@ ggsave("../../Figures/temp/reading1vs2_vco2_changetype.png", device = "png", dpi
 
 # plot CV
 #VO2
-ggplot(rep.temp[rep.temp$challenge_stat == "No",], aes(x = as.factor(reading), y = vo2, group = metab_identifier, color = vo2.cv)) +
+ggplot(rep.temp[rep.temp$challenge_stat == "Unchallenged",], aes(x = as.factor(reading), y = vo2, group = metab_identifier, color = vo2.cv)) +
   geom_point() +
   geom_line() +
-  facet_grid(group~visit.cat) +
+  facet_grid(tube_temp~visit.cat) +
   theme_bw() + 
   theme(legend.position = "bottom",
         axis.text = element_text(size = 12),
         strip.text = element_text(size = 10),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  labs(x = "Reading", y = "VO2 (mL/min")
+  labs(x = "Reading", y = "VO2 (L/min)")
 
 #ggsave("Figures/temp/reading1vs2_cvo2.png", device = "png", dpi = 300, width = 6, height = 4)
 
 #VCO2
-ggplot(rep.temp[rep.temp$challenge_stat == "No",], aes(x = as.factor(reading), y = vco2, group = metab_identifier, color = vco2.cv)) +
+ggplot(rep.temp[rep.temp$challenge_stat == "Unchallenged",], aes(x = as.factor(reading), y = vco2, group = metab_identifier, color = vco2.cv)) +
   geom_point() +
   geom_line() +
   facet_grid(group~visit.cat) +
@@ -280,12 +289,12 @@ ggplot(rep.temp[rep.temp$challenge_stat == "No",], aes(x = as.factor(reading), y
         strip.text = element_text(size = 10),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  labs(x = "Reading", y = "VCO2 (mL/min")
+  labs(x = "Reading", y = "VCO2 (mL/min)")
 
 #ggsave("Figures/temp/reading1vs2_cv_co2.png", device = "png", dpi = 300, width = 6, height = 4)
 
 temp.samplesize <- temp %>% 
-  select(unique_pup_ID, group, challenge_stat) %>%
+  select(group, unique_pup_ID, challenge_stat) %>%
   unique()
 
 table(temp.samplesize$group, temp.samplesize$challenge_stat)
